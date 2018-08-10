@@ -2,18 +2,16 @@
 const express = require('express');
 const uuid = require('uuid/v4')
 const session = require('express-session')
-const csrf = require('csurf');
-const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 var path = require('path');
 
 const PORT = process.env.PORT || 3000;
+
+
 // create the server
 const app = express();
 
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
+var parseForm = bodyParser.urlencoded({ extended: false })
 
 // add & configure middleware
 app.use(session({
@@ -22,48 +20,55 @@ app.use(session({
         console.log(req.sessionID)
         return uuid() // use UUIDs for session IDs
     },
-    secret: 'sdadsadsadsakfijafdoahdahf',
+    name: 'SESS_ID',
+    secret: '^#$5sX(Hf6KUo!#65^',
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: false
 }))
 
-// This middleware adds a req.csrfToken() function 
-// to make a token which should be added to requests which mutate state, 
-// within a hidden form field, query-string etc.
-//  This token is validated against the visitor's session or csrf cookie.
-app.use(csrf())
 
-// error handler
-app.use(function (err, req, res, next) {
-    if (err.code !== 'EBADCSRFTOKEN') return next(err)
-  
-    // handle CSRF token errors here
-    res.status(403)
-    res.send('form tampered with')
-  })
+app.use((req, res, next) => {
+    if (req.session.csrfToken === undefined) {
+        req.session.csrfToken = uuid()
+    }
+    console.log("req.session.csrfToken :" + req.session.csrfToken);
+    next();
+
+})
 
 
 // create the homepage route at '/'
 app.get('/', (req, res) => {
-    console.log('Inside the homepage callback function')
-    console.log(req.sessionID)
-    console.log(req.csrfToken())
-    res.render('send', { csrfToken: req.csrfToken() })
+
+    res.sendFile(path.join(__dirname, 'index.html'));
 })
 
-app.get('/login', function (req, res) {
-    
-    res.sendFile(path.join(__dirname + '/index.html'));
+
+app.post('/middleware', parseForm, function (req, res) {
+    console.log(req)
+    var token = req.session.csrfToken;
+    console.log('middleware().token : ' + token);
+    res.json({ csrfToken: token });
+
 })
+
 
 // In the website, implement an endpoint that accepts 
 // HTTP POST requests and respond with the CSRF token.
 // The endpoint receives the session cookie and based on the session identifier,
 // return the CSRF token value.
-app.post('/process', function (req, res) {
-    res.send('data is being processed')
-})
+app.post('/login', parseForm, function (req, res, next) {
 
+    if (req.session.csrfToken !== req.body._csrf) {
+        console.log('Invalid CSRF Token!');
+        let err = new Error('Invalid CSRF Token!')
+        err.status = 403
+
+        return next(err)
+    }
+    console.log(req)
+    res.send(`<h1>SUCCESSFULLY LOGGED IN</h1> <p>USER: ${req.body.email}</p>`)
+})
 
 // tell the server what port to listen on
 app.listen(PORT, () => {
