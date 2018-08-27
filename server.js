@@ -43,7 +43,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 })
 
-
+// In the website, implement an endpoint that accepts 
+// HTTP POST requests and respond with the CSRF token.
+// The endpoint receives the session cookie and based on the session identifier,
+// return the CSRF token value.
 app.post('/middleware', parseForm, function (req, res) {
     console.log(req)
     var token = req.session.csrfToken;
@@ -52,11 +55,6 @@ app.post('/middleware', parseForm, function (req, res) {
 
 })
 
-
-// In the website, implement an endpoint that accepts 
-// HTTP POST requests and respond with the CSRF token.
-// The endpoint receives the session cookie and based on the session identifier,
-// return the CSRF token value.
 app.post('/login', parseForm, function (req, res, next) {
 
     if (req.session.csrfToken !== req.body._csrf) {
