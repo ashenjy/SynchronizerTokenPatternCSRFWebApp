@@ -1,7 +1,9 @@
 # SynchronizerTokenPatternCSRFWebApp
 
-Deploying steps
+# Deploying steps
 
-npm install
+  npm install
 
-node server.js
+  node server.js
+  
+  https://ashenjay.blogspot.com/2018/08/implementing-cross-site-request-forgery.html
